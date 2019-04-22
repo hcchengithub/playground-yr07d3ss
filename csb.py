@@ -1,3 +1,4 @@
+# Repo: playground-yr07d3ss
 # 在前一版的優良基礎上，改成像 DarthBoss 一樣，不出賤招，直接比試操控能力 
 # ---> 約 360 名。比略出賤招的 250 名略遜。eval_to_cp1() 往前多推算 1 步打分即可。
 
@@ -5,6 +6,136 @@ import sys
 import math
 import numpy as np
 
+# -------------------------------------------------------------------------
+# 17:20 2019-04-15 照 Magus 的建議改寫成 OOP 
+
+class Point:
+    def __init__(self, x, y):
+        self.x, self.y = x, y
+    def distance2(self, p):
+        # distance^2 from this point to p
+        return (this.x - p.x)**2 + (this.y - p.y)**2
+    def distance(self, p):
+        # from this point to p
+        return sqrt(self.distance2(p))
+    def closest(self, a, b):
+        # from this point to line(Point a, Point b)
+
+class Unit(Point):
+    def __init__(self, p0, id, r, v0):
+        self.x, self.y, self.id, self.r, self.vx, self.vy = p0.x, p0.y, id, r, v0.x, v0.y
+    def collision(self, u):
+        pass
+    def bounce(self, u):
+        pass
+
+class Checkpoint(Unit):
+    def bounce(self, u):
+        pass
+
+class Pod(Unit):
+    angle, nextCheckpointId, checked, timeout, partner, shield
+    def __init__(self, p0, id, r, v0):
+        self.x, self.y, self.id, self.r, self.vx, self.vy = p0.x, p0.y, id, r, v0.x, v0.y
+
+    def getAngle(self, p):
+        d = self.distance(p);
+        dx = (p.x - this.x) / d;
+        dy = (p.y - this.y) / d;
+
+        # Simple trigonometry. We multiply by 180.0 / PI to convert radiants to degrees.
+        a = math.acos(dx) * 180.0 / math.pi;
+
+        # If the point I want is below me, I have to shift the angle for it to be correct
+        if (dy < 0):
+            a = 360.0 - a;
+        return a;
+        
+        
+    def diffAngle(self, p):
+        a = self.getAngle(p);
+
+        # To know whether we should turn clockwise or not we look at the two ways and keep the smallest
+        # The ternary operators replace the use of a modulo operator which would be slower
+        right = a - self.angle if self.angle <= a else 360.0 - self.angle + a
+        left  = self.angle - a if self.angle >= a else self.angle + 360.0 - a;
+
+        if (right < left):
+            return right;
+        else:
+            # We return a negative angle if we must rotate to left
+            return -left;
+
+    def rotate(self, p):
+        a = this.diffAngle(p);
+
+        # Can't turn by more than 18 degree in one turn
+        if (a > 18.0):
+            a = 18.0;
+        elif (a < -18.0):
+            a = -18.0;
+
+        self.angle += a;
+
+        # The % operator is slow. If we can avoid it, it's better.
+        if (self.angle >= 360.0):
+            self.angle = self.angle - 360.0;
+        elif (self.angle < 0.0):
+            self.angle += 360.0;
+
+    def boost(self, thrust):
+        # Don't forget that a pod which has activated its shield cannot accelerate for 3 turns
+        if (self.shield):
+            return;
+
+        # Conversion of the angle to radiants
+        ra = self.angle * math.pi / 180.0;
+
+        # Trigonometry
+        self.vx += math.cos(ra) * thrust;
+        self.vy += math.sin(ra) * thrust;
+
+
+    def move(self, t):
+        # t will be useful later when we'll want to simulate an entire turn while taking into account collisions. 
+        self.x += self.vx * t;
+        self.y += self.vy * t;
+
+    def end(self):
+        self.x = round(self.x);
+        self.y = round(self.y);
+        self.vx = int(self.vx * 0.85);
+        self.vy = int(self.vy * 0.85);
+
+        # Don't forget that the timeout goes down by 1 each turn. It is reset to 100 when you pass a checkpoint
+        self.timeout -= 1;
+
+    def play(self, p, thrust):
+        self.rotate(p);
+        self.boost(thrust);
+        self.move(1.0);
+        self.end();
+
+    def bounce(self, u):
+        pass
+    def output(self, move):
+        pass
+        
+class Solusion:
+    def randomize(self):
+        pass
+    
+class Move:
+    def mutate(self, amplitude)
+        pass
+        
+class Collision:
+    unit a, unit b, float t
+    
+    
+    
+    
+    
 # -------------------------------------------------------------------------
 
 step = 0
