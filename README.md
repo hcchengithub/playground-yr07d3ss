@@ -365,7 +365,7 @@ Session Mirror 為 peforth 建立了**持久化的長期歷史與可檢索記憶
 `ai.py` 的 `DEFAULT_PROVIDERS_CONFIG` 明確分為 `stateful` 與 `stateless`：
 
 - **Stateful**：以 OpenAI Agents API 的遠端 session 為核心，讓 conversation 與 turn 狀態由服務端管理，並可透過 Session Mirror 保存本地副本。
-- **Stateless**：以 OpenAI-compatible API 與可切換的 provider profile 為核心，方便選用 OpenAI、Gemini、DeepSeek、Groq、Ollama 等模型。此處的 Stateless 指不依賴 Agents API 的遠端 session 管理，並不表示應用不能自行維護對話歷史。
+- **Stateless**：以 OpenAI-compatible API 與可切換的 provider profile 為核心，方便選用 OpenAI、Gemini、Groq、Ollama 等模型。此處的 Stateless 指不依賴 Agents API 的遠端 session 管理，並不表示應用不能自行維護對話歷史。
 
 兩條路徑共享 peforth 的 Forth / Python 協作環境，卻能因應不同的模型供應商、Session 管理方式與研究需求。對開發者而言，這是架構上的選擇自由，也是 2.1.0 的重要進展。
 
@@ -712,7 +712,7 @@ Session Mirror provides a **persistent, searchable foundation for long-term hist
 The `DEFAULT_PROVIDERS_CONFIG` in `ai.py` explicitly separates `stateful` and `stateless` configurations:
 
 - **Stateful** uses remote sessions managed by the OpenAI Agents API, with Session Mirror available for local historical access.
-- **Stateless** uses OpenAI-compatible endpoints and selectable provider profiles, supporting providers such as OpenAI, Gemini, DeepSeek, Groq, and Ollama. Here, *stateless* means the application does not rely on Agents API remote session management; it can still maintain conversation history on its own.
+- **Stateless** uses OpenAI-compatible endpoints and selectable provider profiles, supporting providers such as OpenAI, Gemini, Groq, and Ollama. Here, *stateless* means the application does not rely on Agents API remote session management; it can still maintain conversation history on its own.
 
 Both paths operate within peforth's Forth / Python environment, offering flexibility in model selection, session management, and experimentation.
 
