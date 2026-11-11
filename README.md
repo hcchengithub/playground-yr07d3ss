@@ -729,6 +729,11 @@ peforth 2.1.0 demonstrates that minimalism and modern capabilities are not mutua
 
 # peforth v2.1.0 AI User Manual
 
+> [!TIP]
+> **Explore the repository with AI.** Please make full use of GitHub Copilot or the Gemini sidebar in Chrome to discuss peforth directly with its source code. This manual is an overview, not an exhaustive reference: ask AI to explain any feature, trace its implementation, or explore design decisions in as much detail as you like.
+>
+> You can even ask AI to help design and implement new Forth words. In peforth's chat mode, a leading `/` passes the rest of the input to the Forth interpreter, so a new word can also become a new slash-invoked capability. The possibilities extend far beyond a fixed list of commands. Give the assistant access to the repository and relevant files so it can ground its explanations and suggestions in the actual implementation.
+
 peforth v2.1.0 integrates an AI assistant directly into its Forth-driven environment. The Python host communicates with language models using standard HTTP client mechanisms, streaming responses into the interactive REPL while safely delegating tool invocations (such as dictionary queries and Forth code execution) back to the local VM.
 
 ---
