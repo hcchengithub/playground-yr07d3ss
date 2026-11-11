@@ -6,13 +6,13 @@
 
 > **版本**：peforth v2.1.0 核心技術架構規範手冊
 > **適用環境**：Python 3.10+ / Linux, WSL, Windows
-> **核心源碼**：`main.py`, `init.f`, `peforth.f`, `projectk.py`, `repl.f`, `base.f`, `ai.f`, `ai.py`
+> **核心源碼**：`main.py`, `init.f`, `peforth.f`, `projectk.py`, `base.f`, `auxiliary.f`, `ai.f`, `herdr.f`, `repl.f`, `ai.py`
 
 ---
 
 ## 序言：極簡主義與現代技術的相遇
 
-在電腦科學的演進史中，Forth 代表著一種登峰造極的極簡美學：以 stack 為核心的虛擬機、零語法開銷、純粹的後綴表示法，以及完全開放編譯器內部狀態的 Metaprogramming 威力。隨著現代軟體工程的發展，Python 等語言帶來了物件參照、自動記憶體管理、豐富的資料結構與第三方函式庫。這些成果為 Forth 提供了新的發展方向：在保有簡潔與可擴充特色的同時，也能直接運用現代 Host Language 的能力。
+在電腦科學的演進史中，Forth 代表著一種登峰造極的極簡美學：以 stack 為核心的虛擬機、零語法開銷、純粹的後綴表示法，以及完全開放Compiler內部狀態的 Metaprogramming 威力。隨著現代軟體工程的發展，Python 等語言帶來了Object Reference、自動記憶體管理、豐富的資料結構與第三方函式庫。這些成果為 Forth 提供了新的發展方向：在保有簡潔與可擴充特色的同時，也能直接運用現代 Host Language 的能力。
 
 **peforth (Python Edition)** 延續 Forth 的設計精神，並探索它與現代程式語言相互結合的架構範式：
 **當 Forth 的多 Stack 拓撲與 Metaprogramming 靈魂，直接運行於 Python 這種具備豐富物件生態與動態特性的 Host Language 之上，會帶來何種可能？**
@@ -22,7 +22,7 @@
 > **「Forth drives Forth; Python provides host primitives.」**
 > （Forth 驅動 Forth 核心邏輯；Python 專注提供底層 Host 原語。）
 
-在 2.1.0 中，系統將互動流程的主導權交由 Forth，並以極簡的 9 行引導程序（`main.py`）喚醒無依賴微核心（`projectk.py`），透過 `init.f` 逐步建構出完整的編譯器與載入器，並最終由 Forth 自行控制 REPL 互動迴圈（`repl.f`）與 AI 助理協同流程。
+在 2.1.0 中，系統將互動流程的主導權交由 Forth，並以極簡的 小於 20 行引導程序（`main.py`）喚醒無依賴微核心（`projectk.py`），透過 `init.f` 逐步建構出完整的Compiler與Loader，並最終由 Forth 自行控制 REPL 互動迴圈（`repl.f`）與 AI 助理協同流程。
 
 本手冊是 peforth 2.1.0 的系統架構手冊與設計理念記錄。本手冊**不做**傳統 Forth 語法的入門字典（各 Word 本身已內建 `help` 與 `comment` 自我文檔），而是深入剖析 peforth 如何用一個僅數百行程式碼的微核心，在動態物件世界中重建純粹的 Forth 哲學，並說明 Coroutine 與 AI 協同安全機制如何融入 Forth 的執行模型。
 
@@ -39,12 +39,12 @@
 
 傳統 Forth（如 FIG-Forth、Forth-79/83 與 ANS Forth）以簡潔的 Stack 架構、靈活的編譯機制與自我延展性著稱。隨著現代程式語言的發展，Python 等語言帶來了許多值得借鏡的新技術，為 Forth 提供了進一步發展的機會：
 
-1. **現代物件與記憶體管理**：傳統 Forth 的線性記憶體模型適合裸機與資源受限的環境；Python 則提供自動記憶體管理（Garbage Collection）與物件參照機制，使 Forth 在現代 Host 上也能直接共享並操作高階物件。
+1. **現代物件與記憶體管理**：傳統 Forth 的線性記憶體模型適合裸機與資源受限的環境；Python 則提供自動記憶體管理（Garbage Collection）與Object Reference機制，使 Forth 在現代 Host 上也能直接共享並操作高階物件。
 2. **豐富的資料型別與結構**：傳統 Forth 的 cell 與 Stack 操作簡潔而直接；Python 原生支援動態字串、List、Dictionary、Class 等資料結構，讓 Forth 可以直接運用這些成熟能力，擴展資料表達方式。
 3. **龐大的軟體生態系**：Python 擁有豐富的第三方函式庫，涵蓋科學計算、機器學習、網路通訊與作業系統整合等領域。Forth 可以直接借助這些資源，拓展應用範圍。
 
 **peforth 的設計理念：保留 Forth 的精髓，引進現代語言的能力——共生微核心 (Symbiotic Micro-Kernel)**
-* **共享物件空間**：peforth 的 stack 上流轉的除了傳統的整數或指標，也可以是，而是**活生生的 Python 物件參照**（整數、浮點數、字串、清單、字典、生成器乃至自訂 class 實例）。
+* **共享物件空間**：peforth 的 stack 上流轉的除了傳統的整數或指標，也可以是**Python Object Reference**（整數、浮點數、字串、清單、字典、生成器乃至自訂 class 實例）。
 * **Forth 與 Host 各展所長**：Forth 保留其無可匹敵的流程中樞控制力、自訂 DSL 能耐與 Metaprogramming factory；而重型運算、系統 API、字元編碼與巨量庫則直接由 Python 全權支撐。
 
 ---
@@ -57,11 +57,11 @@ peforth 以多個 stack 分工保存運算資料與 Task-local 控制狀態：Da
 flowchart TB
     subgraph VM ["VM 執行實例"]
         direction LR
-        subgraph DS ["Data Stack (vm.stack)"]
+        subgraph DS ["Data Stack (vm.dstack)"]
             direction TB
             D1["TOS (Top of Stack)"]
             D2["..."]
-            D3["Python 物件參照 (整數/字串/清單)"]
+            D3["Python Object Reference (整數/字串/清單)"]
             D1 --- D2
             D2 --- D3
         end
@@ -82,9 +82,9 @@ flowchart TB
     end
 ```
 
-1. **Data Stack (`vm.stack`)**：
+1. **Data Stack (`vm.dstack`)**：
    * 運算元的流通中心與參數傳遞管線。
-   * 物理實作為 Python 原生 `list`。所有的推入 (`push`) 與彈出 (`pop`) 均受到邊界保護；當 stack 為空而嘗試 pop 時，由 Python 層級直接拋出明確的 `KernelError("Data stack underflow")`，讓錯誤更容易辨識與處理。
+   * 物理實作為 Python 原生 `list`。所有的推入 (`push`) 與彈出 (`pop`) 均受到邊界保護；當 stack 為空而嘗試 pop 時，由 Python 層級直接拋出明確的 `KernelError: Invalid data stack depth (or empty stack)`，讓錯誤更容易辨識與處理。
 2. **Return Stack (`Task.rstack`)**：
    * **Task Private 私有資源**：每個 Task 擁有專屬獨立的 `rstack`（物理存儲於 `Task.rstack`，透過 `vm.rstack` 代理動態路由至當前活躍 Task）。
    * 用於計數迴圈計數器暫存（如 `for ... next / aft`）與程式流程的臨時中轉（`>r`, `r>`, `r@`, `rdrop`）。
@@ -93,7 +93,7 @@ flowchart TB
    * **Task Private 私有資源**：每個 Task 擁有專屬的暫存堆疊，可用於存放 TIB 游標位移或剖析器的臨時檢查點。透過 `>t`、`t@`、`t>` 進行操作。
 
 #### Stack Effect 標記慣例
-在無型別語法的後綴世界中，Stack Effect 註釋是理解程式不變式的命脈。peforth 以標準形式標示各 stack 的輸入與輸出，棧頂元素 (TOS) 恆在最右側：
+在無型別語法的後綴世界中，Stack Effect 註釋是理解程式不變式的命脈。peforth 以標準形式標示各 stack 的輸入與輸出，top of the data stack (TOS) 恆在最右側：
 ```forth
 \ 單純操縱 Data stack
 ( a b -- c )
@@ -113,7 +113,7 @@ peforth 2.1.0 的微核心嚴格恪守以下設計不變式：
 1. **零外部依賴 (Zero External Dependencies)**：
    `projectk.py` 全長僅約 450 行，且僅導入 Python 標準函式庫模組（`dataclasses`, `inspect`, `io`, `re`, `tokenize`），保持核心獨立於外部 UI、網路或終端格式化套件。
 2. **極致種子狀態 (Minimal Seed State)**：
-   核心在 Python 啟動時僅宣告 **兩個原生種子詞**：`code` 與 `end-code`。所有其他語彙（包含冒號編譯器 `:`、分號 `;`、條件跳轉 `if`、`else`、`then` 以及立即詞標記 `immediate`）皆在 `init.f` 啟動階段由 Forth 源碼自身編譯建立。
+   核心在 Python 啟動時僅宣告 **兩個原生種子詞**：`code` 與 `end-code`。所有其他語彙（包含冒號Compiler `:`、分號 `;`、條件跳轉 `if`、`else`、`then` 以及立即詞標記 `immediate`）皆在 `init.f` 啟動階段由 Forth 源碼自身編譯建立。
 3. **統一異常階層**：
    核心所有錯誤統一繼承自 `KernelError`，提供一致且可預測的錯誤捕捉機制。
 
@@ -125,29 +125,31 @@ peforth 2.1.0 的微核心嚴格恪守以下設計不變式：
 
 ```mermaid
 flowchart TD
-    A["main.py (9 行極簡 Bootloader)\n建立 VM 實例並 dictate init.f"] --> B["init.f (微核心啟動階段)\n定義基礎註解、Property、:, ;, pause/resume, include"]
+    A["main.py (小於 20 行極簡 Bootloader)\n建立 VM 實例並 dictate init.f"] --> B["init.f (微核心啟動階段)\n定義基礎註解、Property、:, ;, pause/resume, include"]
     B --> C["peforth.f (擴充總清單)\n依序載入各模組"]
-    C --> D["ai.f\nTask 安全審批與 ai: 核心指令"]
-    C --> E["base.f\n標準 Forth 字典與 safe=True 安全標註"]
-    C --> F["repl.f\nForth 驅動之互動式多行 REPL 迴圈"]
-    C --> G["?repl\n啟動終端互動 (若 headless=True 則自動略過)"]
+    C --> D["base.f\n標準 Forth 字典與 safe=True 安全標註"]
+    D --> E["auxiliary.f\n輔助詞彙"]
+    E --> F["ai.f\nTask 安全審批與 ai: 核心指令"]
+    F --> G["herdr.f\n擴充模組"]
+    G --> H["repl.f\nForth 驅動之互動式多行 REPL 迴圈"]
+    H --> I["?repl\n啟動終端互動 (若 headless=True 則自動略過)"]
 ```
 
 ### 各模組職責劃分
 
-1. **`main.py`** (9 行)：
+1. **`main.py`** (小於 20 行)：
    僅負責設定 `vm.host["__file__dir__"]`，並調用 `vm.dictate("init.f")`。讓互動迴圈與命令分派由 Forth 負責。
 2. **`init.f`**：
    在純粹的微核心之上，由 Forth 語法逐一構築關鍵基礎設施：
    - 註解與文件詞：`\`, `(`, `//`, `///`
    - Word 物件屬性賦予：`last`, `::`
-   - 冒號編譯器：`:`, `;`, `immediate`
+   - 冒號Compiler：`:`, `;`, `immediate`
    - 堆疊常數輔助詞：`true`, `false`, `rest`
    - 協同 Task 控制詞：`pause`, `resume`, `abort`, `bye`
-   - 載入器：`include`
+   - Loader：`include`
    - **最後一行嚴格指向**：`include peforth.f`。
 3. **`peforth.f`**：
-   系統的 Extension Manifest，依序載入 `ai.f`、`base.f` 與 `repl.f`，最後定義並調用 `?repl`。若環境設定 `vm.host["headless"] = True`，則可供自動化測試或第三方應用安全 import，不致卡在終端輸入。
+   系統的 Extension Manifest，依序載入 `base.f`、`auxiliary.f`、`ai.f`、`herdr.f` 與 `repl.f`，最後定義並調用 `?repl`。若環境設定 `vm.host["headless"] = True`，則可供自動化測試或第三方應用安全 import，不致卡在終端輸入。
 4. **`repl.f`**：
    **Forth 驅動的互動式 REPL**。以 `code repl` 實作，內建多行貼上累計、狀態感知提示詞（`chat>`、`>`、`... `），並整合 `prompt_toolkit` 快捷鍵，同時具備 Python 標準 `input()` 的平滑降級備援機制。
 
@@ -165,7 +167,7 @@ flowchart TD
 
 ## 第四章：控制結構與非平坦位址回填機制
 
-在 peforth 中，控制結構不是寫死在編譯器裡的硬編碼語法，而是由具備 `immediate` 屬性的立即詞在編譯期動態回填跳轉目標：
+在 peforth 中，控制結構不是寫死在Compiler裡的硬編碼語法，而是由具備 `immediate` 屬性的立即詞在編譯期動態回填跳轉目標：
 
 ```forth
 \ 條件分支
@@ -181,7 +183,7 @@ begin body again
 10 for aft r@ . then next cr
 ```
 
-`if` 會在編譯期記錄當前位置並預留分支指令，待 `else` 或 `then` 出現時，再將正確的跳轉位移精確回填至先前的指令槽位中。這展示了 Forth 開放編譯器架構的簡潔與強大。
+`if` 會在編譯期記錄當前位置並預留分支指令，待 `else` 或 `then` 出現時，再將正確的跳轉位移精確回填至先前的指令槽位中。這展示了 Forth 開放Compiler架構的簡潔與強大。
 
 ---
 
@@ -290,8 +292,8 @@ last :: safe=True
 
 ## 第九章：字典內省、三階段反編譯與即時除錯
 
-### 9.1 三階段反編譯器 `see` (Three-Stage Decompiler)
-輸入 `see <word>` 時，反編譯器依序輸出三個維度的資訊：
+### 9.1 三階段反Compiler `see` (Three-Stage Decompiler)
+輸入 `see <word>` 時，反Compiler依序輸出三個維度的資訊：
 1. **文檔標頭 (Documentation Header)**：輸出 Stack Effect 註解及 `//`、`///` 說明文字。
 2. **Word 中繼資料字典 (Object Metadata Inspection)**：印出該 Word 物件在 Python 層級的屬性字典（`type`, `immediate`, `safe`, `action` 等）。
 3. **精準源碼還原 (Source Restoration)**：依據 Word 類型，將其內部指令精確還原為最具可讀性的定義形式（colon 定義還原為 `: name ... ;`、Python code 還原為 `code name ... end-code`）。
@@ -319,7 +321,7 @@ f = "main:main"
 
 ### 10.3 三重防護驗證套件 (Triple-Guard Test Suite)
 為確保微核心架構不變式不受破壞，peforth 2.1.0 建立了嚴格的自動化防線：
-1. **AST 架構合約測試**：以靜態分析確保 `main.py` 不超過 15 行且無迴圈；`init.f` 最終行必為 `include peforth.f`。
+1. **AST 架構合約測試**：以靜態分析確保 `main.py` 少於 20 行且無迴圈；`init.f` 最終行必為 `include peforth.f`。
 2. **原生 Forth 自我測試 (`selftest.f`)**：在 Forth VM 內部直接驗證各詞彙語義。
 3. **全方位的單元測試套件 (`test_all.py`)**：全面檢驗 Data Stack、控制結構、Multiline 解析、Session 儲存庫以及安全性攔截：
    ```bash
@@ -340,7 +342,7 @@ peforth v2.1.0 完美證明了：極簡美學與現代強大能力可以相輔�
 > English edition · Companion to the Traditional Chinese [peforth manual](peforth%20manual.md).
 >
 > Runtime: Python 3.10+ on Linux, WSL, and Windows.
-> Principal sources: `main.py`, `init.f`, `peforth.f`, `projectk.py`, `repl.f`, `base.f`, `ai.f`, and `ai.py`.
+> Principal sources: `main.py`, `init.f`, `peforth.f`, `projectk.py`, `base.f`, `auxiliary.f`, `ai.f`, `herdr.f`, `repl.f`, and `ai.py`.
 
 This is an **architecture and design manual**, not an exhaustive dictionary word reference. Every Forth word provides runtime help and comments via `help` and `see`. For installation, virtual environment setup, configuration (`.env` and `providers.yaml`), the `f` CLI command, and quick start instructions, please consult the repository [README](../../README.md). For details on the AI assistant, also see [AI User Manual](ai.md).
 
@@ -356,7 +358,7 @@ In `peforth v2.1.0`, this philosophy reaches its definitive expression:
 
 > **"Forth drives Forth; Python provides host primitives."**
 
-Instead of a monolithic Python supervisor controlling the outer loop, peforth 2.1.0 boots from a tiny 9-line shim (`main.py`), initializes its micro-kernel (`projectk.py`), constructs its compiler through `init.f`, loads its modules via `peforth.f`, and drives its interactive REPL directly inside Forth (`repl.f`).
+Instead of a monolithic Python supervisor controlling the outer loop, peforth 2.1.0 boots from a tiny under-20-line shim (`main.py`), initializes its micro-kernel (`projectk.py`), constructs its compiler through `init.f`, loads its modules via `peforth.f`, and drives its interactive REPL directly inside Forth (`repl.f`).
 
 ---
 
@@ -378,7 +380,7 @@ peforth divides computation and task-local state across three distinct stacks:
 flowchart TB
     subgraph VM ["VM Instance"]
         direction LR
-        subgraph DS ["Data Stack (vm.stack)"]
+        subgraph DS ["Data Stack (vm.dstack)"]
             direction TB
             D1["TOS (Top of Stack)"]
             D2["..."]
@@ -403,9 +405,9 @@ flowchart TB
     end
 ```
 
-1. **Data Stack (`vm.stack`)**:
+1. **Data Stack (`vm.dstack`)**:
    - The shared operand highway across executions within the same VM instance.
-   - Implemented as a native Python list. Popping from an empty stack triggers a clean `KernelError("Data stack underflow")`, preventing memory corruption.
+   - Implemented as a native Python list. Popping from an empty stack triggers a clean `KernelError: Invalid data stack depth (or empty stack)`, preventing memory corruption.
 2. **Return Stack (`Task.rstack`)**:
    - **Task-Private**: Each Task maintains its own return stack. `vm.rstack` dynamically proxies operations to the currently active Task.
    - Holds loop counters (for `for ... next / aft`) and temporary values (`>r`, `r>`, `r@`, `rdrop`). When a Task pauses, its loop state remains isolated and safe from interference by other tasks.
@@ -435,12 +437,14 @@ In peforth 2.1.0, execution flows strictly from minimal bootstrapping to Forth-d
 
 ```mermaid
 flowchart TD
-    A["main.py (9 lines)\nInstantiates VM & dictates init.f"] --> B["init.f (Bootstrap Core)\nDefines :, ;, comments, pause/resume, include"]
+    A["main.py (fewer than 20 lines)\nInstantiates VM & dictates init.f"] --> B["init.f (Bootstrap Core)\nDefines :, ;, comments, pause/resume, include"]
     B --> C["peforth.f (Master Manifest)\nLoads modules in sequence"]
-    C --> D["ai.f\nTask security guards & ai:"]
-    C --> E["base.f\nStandard vocabulary with safe=True annotations"]
-    C --> F["repl.f\nInteractive multiline REPL loop in Forth"]
-    C --> G["?repl\nLaunches REPL (skipped if headless=True)"]
+    C --> D["base.f\nStandard vocabulary with safe=True annotations"]
+    D --> E["auxiliary.f\nAuxiliary words"]
+    E --> F["ai.f\nTask security guards & ai:"]
+    F --> G["herdr.f\nExtension module"]
+    G --> H["repl.f\nInteractive multiline REPL loop"]
+    H --> I["?repl\nLaunches REPL (skipped if headless=True)"]
 ```
 
 1. **`main.py`**:
@@ -451,7 +455,7 @@ flowchart TD
    include peforth.f
    ```
 3. **`peforth.f`**:
-   The master manifest that includes `ai.f`, `base.f`, and `repl.f`, culminating in the conditional invocation word `?repl`. Setting `vm.host["headless"] = True` enables headless execution for automated testing without hanging on terminal input.
+   The master manifest that includes `base.f`, `auxiliary.f`, `ai.f`, `herdr.f`, and `repl.f`, culminating in the conditional invocation word `?repl`. Setting `vm.host["headless"] = True` enables headless execution for automated testing without hanging on terminal input.
 4. **`repl.f`**:
    The interactive REPL is implemented as a Forth word (`code repl`). It supports multiline input accumulation, state-aware continuation (`chat>` vs `>` vs `... `), and optional `prompt_toolkit` bindings with graceful fallback to standard `input()`.
 
@@ -628,7 +632,7 @@ Installing in editable mode (`uv pip install -e .`) exposes the `f` executable d
 
 ### 10.3 Triple-Guard Verification Suite
 To prevent regressions, peforth 2.1.0 incorporates three layers of automated verification:
-1. **Architectural AST Contract Tests**: Enforce architectural rules (e.g., `main.py` is under 15 lines and contains no loops; `init.f` ends strictly with `include peforth.f`).
+1. **Architectural AST Contract Tests**: Enforce architectural rules (e.g., `main.py` is under 20 lines and contains no loops; `init.f` ends strictly with `include peforth.f`).
 2. **Native Forth Self-Test (`selftest.f`)**: A self-contained Forth test suite executed directly in the VM.
 3. **Comprehensive Unit Suite (`test_all.py`)**: Tests data stacks, loops, control structures, tokenizers, multiline parsing, session storage, and security guards. Run tests via:
    ```bash
