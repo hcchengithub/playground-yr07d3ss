@@ -738,7 +738,7 @@ peforth v2.1.0 integrates an AI assistant directly into its Forth-driven environ
 In peforth 2.1.0, AI support is built on four core pillars:
 
 1. **Stateless & Stateful Dual Modes**:
-   - **Stateless Mode**: Uses standard OpenAI-compatible `/chat/completions` endpoints. Ideal for lightweight queries, multi-turn chat, fast prompt evaluation, and compatibility with local or alternative model providers (Gemini, DeepSeek, Groq, Ollama, vLLM).
+   - **Stateless Mode**: Uses standard OpenAI-compatible `/chat/completions` endpoints. Ideal for lightweight queries, multi-turn chat, fast prompt evaluation, and compatibility with local or alternative model providers (Gemini, Groq, Ollama, vLLM).
    - **Stateful Mode**: Leverages OpenAI Agents API sessions with remote turn and state tracking, SSE streaming, and persistent cloud sessions.
 2. **Multi-Provider & Profile Management (`providers.yaml`)**:
    - Declare any number of profiles with specific API endpoints, model IDs, token limits, and custom parameters.
@@ -765,7 +765,6 @@ Create `.env` by copying `.env.example`:
 # API Keys for Model Providers
 OPENAI_API_KEY=your_openai_api_key_here
 GEMINI_API_KEY=your_gemini_api_key_here
-DEEPSEEK_API_KEY=your_deepseek_api_key_here
 GROQ_API_KEY=your_groq_api_key_here
 
 # Runtime and Path Overrides (Optional)
@@ -813,14 +812,6 @@ profiles:
     base_url: https://api.openai.com/v1
     api_key_env: OPENAI_API_KEY
     model: gpt-4o
-
-  deepseek-coder:
-    mode: stateless
-    provider: deepseek
-    base_url: https://api.deepseek.com/v1
-    api_key_env: DEEPSEEK_API_KEY
-    model: deepseek-chat
-    temperature: 0.2
 
   local-ollama:
     mode: stateless
@@ -978,10 +969,11 @@ python tools/peforth_watchdog.py
 - **`No API key configured for profile <name>`**:
   Check that the corresponding environment variable (e.g., `OPENAI_API_KEY`, `GEMINI_API_KEY`) is exported in your shell or present in `~/.peforth/.env`.
 - **Switching Models on the Fly**:
-  Use Forth words or update `providers.yaml`. In Forth:
+  Simply ask the AI in natural language; there is no need to memorize Forth commands or edit `providers.yaml` for an ordinary model switch. For example:
   ```forth
-  s" deepseek-coder" to aiProfile
+  > ai: 請把 active LLM 切成 Google Gemini 3.8 Flash
   ```
+  The requested model must be available through a configured provider and valid credentials.
 - **Permission Denied on Security Prompt**:
   If a proposal was rejected, you can inspect what the model attempted by running `ai-status` or checking `tools/peforth_logging_monitor.py`.
 - **WSL PowerShell Interoperability**:
