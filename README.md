@@ -847,12 +847,30 @@ chat>
 ### 3.1 Switching Modes
 - **`chat` mode (`chat> ` prompt)**:
   - Every input line (or multiline block) submitted via Enter is automatically treated as a prompt and sent to the active AI session.
-  - Type `forth` to switch to Forth execution mode.
+  - Type `/forth` to switch to Forth execution mode. In chat mode, a leading `/` sends the entire remaining input to the Forth interpreter; it is not limited to a predefined command list.
 - **`forth` mode (`> ` prompt)**:
   - Standard Forth prompt where text is compiled or interpreted as Forth words.
   - Type `chat` to switch to chat mode.
 
-### 3.2 Invoking AI from Forth Mode
+### 3.2 Slash as a Gateway to the Full Forth Language
+
+Many AI agents offer a fixed set of slash commands for leaving conversation mode or invoking system actions. peforth takes a more expressive approach: in chat mode, **the leading `/` passes the rest of the entire Terminal Input Buffer (TIB) to Forth**. The implementation in `repl.f` strips the leading slash and executes the remainder with `vm.dictate()`.
+
+This is not a restricted command menu. You can run Forth expressions, define new words, and execute programs without first leaving chat mode:
+
+```forth
+chat> /1 2 + .
+3
+chat> /: square dup * ;
+chat> /5 square .
+25
+chat> /forth
+>
+```
+
+The slash is therefore a direct bridge to the extensible Forth language itself. `/forth` switches to the persistent Forth REPL; `/chat` is also available to return to chat mode.
+
+### 3.3 Invoking AI from Forth Mode
 - **`ai: <prompt>`**:
   Submits everything following `ai:` up to the end of the input buffer to the AI assistant and streams the response directly to the terminal:
   ```forth
@@ -869,7 +887,7 @@ chat>
   s" What is 123 * 456 in Forth?" false (ai) . cr
   ```
 
-### 3.3 Command-Line One-Shot Mode (`f -c`)
+### 3.4 Command-Line One-Shot Mode (`f -c`)
 Run prompts directly from your shell without launching the interactive REPL:
 ```bash
 # Ask a one-shot question
@@ -892,28 +910,27 @@ Security in peforth 2.1.0 is implemented directly at the vocabulary level.
   ```
 - Words that access the filesystem, shell out, establish network connections, or modify the compiler state (e.g., `code`, `system`, `file-write`, `re-define`) are unannotated or marked `safe=False`.
 
-### 4.2 Interactive Approval Workflow
-When the AI assistant calls `peforth_run_forth` to execute generated code:
-1. The code runs inside a dedicated `Task`.
-2. As long as only `safe=True` words are invoked, execution proceeds without pause.
-3. When an unsafe word is encountered, the VM pauses (`pause`), and the REPL displays the pending proposal:
+### 4.2 Approval in Practice
 
+When AI-generated Forth reaches a word that requires approval, peforth pauses the Task and presents the proposed code and its purpose. The current interface offers four choices:
+
+```text
+[AI Proposes Forth Code]
+Purpose: Print Hello World using Python.
+Source:
+<py> print("Hello World") </py>
+
+1. Allow Once
+2. Trust this AI task
+3. Deny this proposal
+4. Cancel this AI task
+
+Choose 1-4:
 ```
-[Security Review] Pending AI Forth execution:
-  s" sensitive_data.json" file-delete
-Approve? ([a]llow once, [t]rust task, [d]eny, [c]ancel):
-```
 
-- **`allow_once` (`a`)**: Approves this single word execution. Next unsafe word will prompt again.
-- **`trust_task` (`t`)**: Grants temporary trust to the current AI Task until it finishes, fails, or completes.
-- **`deny` (`d`)**: Refuses this specific proposal; returns an execution error message to the AI.
-- **`cancel` (`c`)**: Immediately cancels the entire active AI turn.
+**Allow Once** approves the current checkpoint; another checkpoint may require another approval, even during the same Task. **Trust this AI task** allows the remaining execution of that Task. **Deny** rejects the proposal, while **Cancel** stops the AI Task.
 
-### 4.3 Forth Security Control Words
-- **`trust-task`**: Manually grant trust to the active task.
-- **`cancel-task`**: Abort the active task.
-- **`ai-trust-runtime`**: Enable global runtime trust (all proposals run without prompting until revoked).
-- **`ai-confirm`**: Revoke runtime trust immediately and restore the security approval gate.
+This concise example illustrates the user-facing interaction; the exact proposals and number of prompts depend on the code being executed. For implementation details, inspect the security handling in `ai.py` and `ai.f` with GitHub Copilot or the Gemini sidebar in Chrome.
 
 ---
 
