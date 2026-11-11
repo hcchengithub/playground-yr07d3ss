@@ -10,21 +10,21 @@
 
 ---
 
-## 序言：重構極簡主義的威力
+## 序言：極簡主義與現代技術的相遇
 
-在電腦科學的演進史中，Forth 代表著一種登峰造極的極簡美學：以 stack 為核心的虛擬機、零語法開銷、純粹的後綴表示法，以及完全開放編譯器內部狀態的 Metaprogramming 威力。然而，傳統 16-bit 與裸機 (Bare-metal) 時代的 Forth 體系，在現代軟體工程中卻逐漸陷入孤島困局——封閉的平坦位元組記憶體空間、薄弱的原生資料結構、缺乏現代型別系統，以及無法直接調用海量第三方軟體庫的窘境。
+在電腦科學的演進史中，Forth 代表著一種登峰造極的極簡美學：以 stack 為核心的虛擬機、零語法開銷、純粹的後綴表示法，以及完全開放編譯器內部狀態的 Metaprogramming 威力。隨著現代軟體工程的發展，Python 等語言帶來了物件參照、自動記憶體管理、豐富的資料結構與第三方函式庫。這些成果為 Forth 提供了新的發展方向：在保有簡潔與可擴充特色的同時，也能直接運用現代 Host Language 的能力。
 
-**peforth (Python Edition)** 的誕生，並非為了在現代作業系統中復刻一套 1980 年代的經典模擬器，而是為了探索一個全新的架構範式：
+**peforth (Python Edition)** 延續 Forth 的設計精神，並探索它與現代程式語言相互結合的架構範式：
 **當 Forth 的多 Stack 拓撲與 Metaprogramming 靈魂，直接運行於 Python 這種具備豐富物件生態與動態特性的 Host Language 之上，會帶來何種可能？**
 
-在 **peforth v2.1.0** 中，這個理念達到了前所未有的純粹境界：
+在 **peforth v2.1.0** 中，這個理念進一步落實為清楚的分工：
 
 > **「Forth drives Forth; Python provides host primitives.」**
 > （Forth 驅動 Forth 核心邏輯；Python 專注提供底層 Host 原語。）
 
-在 2.1.0 中，系統徹底擺脫了過去由龐大 Python 主控腳本控制外層輸入迴圈的包袱，轉變為由極簡的 9 行引導程序（`main.py`）喚醒無依賴微核心（`projectk.py`），透過 `init.f` 逐步建構出完整的編譯器與載入器，並最終由 Forth 自行控制 REPL 互動迴圈（`repl.f`）與 AI 助理協同流程。
+在 2.1.0 中，系統將互動流程的主導權交由 Forth，並以極簡的 9 行引導程序（`main.py`）喚醒無依賴微核心（`projectk.py`），透過 `init.f` 逐步建構出完整的編譯器與載入器，並最終由 Forth 自行控制 REPL 互動迴圈（`repl.f`）與 AI 助理協同流程。
 
-本手冊是 peforth 2.1.0 的系統架構手冊與設計理念記錄。本手冊**不做**傳統 Forth 語法的入門字典（各 Word 本身已內建 `help` 與 `comment` 自我文檔），而是深入剖析 peforth 如何用一個僅數百行程式碼的微核心，在動態物件世界中重建純粹的 Forth 哲學，並徹底解構傳統非同步編程與 AI 協同的安全枷鎖。
+本手冊是 peforth 2.1.0 的系統架構手冊與設計理念記錄。本手冊**不做**傳統 Forth 語法的入門字典（各 Word 本身已內建 `help` 與 `comment` 自我文檔），而是深入剖析 peforth 如何用一個僅數百行程式碼的微核心，在動態物件世界中重建純粹的 Forth 哲學，並說明 Coroutine 與 AI 協同安全機制如何融入 Forth 的執行模型。
 
 > [!TIP]
 > **想直接動手跑起來？**
@@ -35,17 +35,17 @@
 
 ## 第一章：設計理念與架構概述 (Design Philosophy & Architecture)
 
-### 1.1 傳統 Forth 的困局與 peforth 的解方
+### 1.1 現代程式語言的發展與 Forth 的新契機
 
-傳統 Forth（如 FIG-Forth、Forth-79/83 與 ANS Forth）具備驚人的執行效率與自我延展性，但在現代計算環境中面臨三大根本瓶頸：
+傳統 Forth（如 FIG-Forth、Forth-79/83 與 ANS Forth）以簡潔的 Stack 架構、靈活的編譯機制與自我延展性著稱。隨著現代程式語言的發展，Python 等語言帶來了許多值得借鏡的新技術，為 Forth 提供了進一步發展的機會：
 
-1. **Flat Memory 記憶體沙盒的局限**：傳統 Forth 假設全系統運作在一個線性位址空間（通常是 64KB 的 byte array）。這在裸機微控制器上十分自然，但在具備垃圾回收機制 (GC)、高階物件導向與虛擬記憶體的現代 Host 上，強行模擬 flat memory 只是在沙盒裡畫地為牢，無法直接共享 Host 的高階物件。
-2. **型別系統與資料結構的匱乏**：傳統 Forth 的 stack 單元本質上只是單純的 cell（整數或指標）。處理多維陣列、雜湊表 (hash map)、多型物件或動態字串時，程式設計師必須從頭用記憶體位移自行實作，代碼難以維護。
-3. **生態系割裂**：現代工程的生產力建立在第三方庫（科學計算、機器學習、網路協定、作業系統 API）之上。一個程式語言的價值，不僅取決於自身的表達能力，更取決於它能否充分運用現有的軟體生態系。
+1. **現代物件與記憶體管理**：傳統 Forth 的線性記憶體模型適合裸機與資源受限的環境；Python 則提供自動記憶體管理（Garbage Collection）與物件參照機制，使 Forth 在現代 Host 上也能直接共享並操作高階物件。
+2. **豐富的資料型別與結構**：傳統 Forth 的 cell 與 Stack 操作簡潔而直接；Python 原生支援動態字串、List、Dictionary、Class 等資料結構，讓 Forth 可以直接運用這些成熟能力，擴展資料表達方式。
+3. **龐大的軟體生態系**：Python 擁有豐富的第三方函式庫，涵蓋科學計算、機器學習、網路通訊與作業系統整合等領域。Forth 可以直接借助這些資源，拓展應用範圍。
 
-**peforth 的核心破局之道：共生微核心 (Symbiotic Micro-Kernel)**
-* **拋棄沙盒，共享物件空間**：peforth 的 stack 上流轉的不再是單純的 16-bit/32-bit 位元組，而是**活生生的 Python 物件參照**（整數、浮點數、字串、清單、字典、生成器乃至自訂 class 實例）。
-* **機制在 Forth，能力在 Host**：Forth 保留其無可匹敵的流程中樞控制力、自訂 DSL 能耐與 Metaprogramming factory；而重型運算、系統 API、字元編碼與巨量庫則直接由 Python 全權支撐。
+**peforth 的設計理念：保留 Forth 的精髓，引進現代語言的能力——共生微核心 (Symbiotic Micro-Kernel)**
+* **共享物件空間**：peforth 的 stack 上流轉的除了傳統的整數或指標，也可以是，而是**活生生的 Python 物件參照**（整數、浮點數、字串、清單、字典、生成器乃至自訂 class 實例）。
+* **Forth 與 Host 各展所長**：Forth 保留其無可匹敵的流程中樞控制力、自訂 DSL 能耐與 Metaprogramming factory；而重型運算、系統 API、字元編碼與巨量庫則直接由 Python 全權支撐。
 
 ---
 
@@ -84,7 +84,7 @@ flowchart TB
 
 1. **Data Stack (`vm.stack`)**：
    * 運算元的流通中心與參數傳遞管線。
-   * 物理實作為 Python 原生 `list`。所有的推入 (`push`) 與彈出 (`pop`) 均受到邊界保護；當 stack 為空而嘗試 pop 時，由 Python 層級直接拋出明確的 `KernelError("Data stack underflow")`，杜絕記憶體隨機損毀。
+   * 物理實作為 Python 原生 `list`。所有的推入 (`push`) 與彈出 (`pop`) 均受到邊界保護；當 stack 為空而嘗試 pop 時，由 Python 層級直接拋出明確的 `KernelError("Data stack underflow")`，讓錯誤更容易辨識與處理。
 2. **Return Stack (`Task.rstack`)**：
    * **Task Private 私有資源**：每個 Task 擁有專屬獨立的 `rstack`（物理存儲於 `Task.rstack`，透過 `vm.rstack` 代理動態路由至當前活躍 Task）。
    * 用於計數迴圈計數器暫存（如 `for ... next / aft`）與程式流程的臨時中轉（`>r`, `r>`, `r@`, `rdrop`）。
@@ -111,7 +111,7 @@ flowchart TB
 
 peforth 2.1.0 的微核心嚴格恪守以下設計不變式：
 1. **零外部依賴 (Zero External Dependencies)**：
-   `projectk.py` 全長僅約 450 行，且僅導入 Python 標準函式庫模組（`dataclasses`, `inspect`, `io`, `re`, `tokenize`），絕不依賴任何外部 UI、網路或終端格式化套件。
+   `projectk.py` 全長僅約 450 行，且僅導入 Python 標準函式庫模組（`dataclasses`, `inspect`, `io`, `re`, `tokenize`），保持核心獨立於外部 UI、網路或終端格式化套件。
 2. **極致種子狀態 (Minimal Seed State)**：
    核心在 Python 啟動時僅宣告 **兩個原生種子詞**：`code` 與 `end-code`。所有其他語彙（包含冒號編譯器 `:`、分號 `;`、條件跳轉 `if`、`else`、`then` 以及立即詞標記 `immediate`）皆在 `init.f` 啟動階段由 Forth 源碼自身編譯建立。
 3. **統一異常階層**：
@@ -136,7 +136,7 @@ flowchart TD
 ### 各模組職責劃分
 
 1. **`main.py`** (9 行)：
-   僅負責設定 `vm.host["__file__dir__"]`，並調用 `vm.dictate("init.f")`。嚴格禁止在 Python 中撰寫 `while True:` 輸入迴圈或複雜命令分派。
+   僅負責設定 `vm.host["__file__dir__"]`，並調用 `vm.dictate("init.f")`。讓互動迴圈與命令分派由 Forth 負責。
 2. **`init.f`**：
    在純粹的微核心之上，由 Forth 語法逐一構築關鍵基礎設施：
    - 註解與文件詞：`\`, `(`, `//`, `///`
@@ -157,7 +157,7 @@ flowchart TD
 
 傳統 Forth 依賴連續平坦的線性位址空間與稱為 `PAD` 的臨時記憶區。在 peforth 中：
 
-* **無平坦 byte array 沙盒**：字串與二進位資料直接使用 Python 原生的 `str`、`bytes` 或 `io.StringIO` 串流，徹底消除記憶體越界與緩衝區溢位的硬體缺陷。
+* **無平坦 byte array 沙盒**：字串與二進位資料直接使用 Python 原生的 `str`、`bytes` 或 `io.StringIO` 串流，善用 Host 的記憶體管理與字串處理能力。
 * **Task 私有 TIB (Terminal Input Buffer)**：每個 Task 擁有獨立的輸入緩衝區與游標指針。Forth 的 `word`、`parse` 與 `char` 均直接從當前活躍 Task 的輸入串流中精準提取 Token。
 * **編譯期位址回填**：冒號定義編譯後的產物是存放於 `vm.frame.colon_code` 中的步驟清單。控制流的分支指令（`branch`, `0branch`, `doNext`）儲存的是指向清單中索引步驟的整數 offset，無須計算二進位記憶體位移。
 
@@ -330,7 +330,7 @@ f = "main:main"
 
 ## 結語
 
-peforth v2.1.0 完美證明了：極簡美學與現代強大能力絕非互斥。透過貫徹「**Forth drives Forth; Python provides host primitives**」的核心理念，peforth 成功在動態物件語言之上，構築出一個靈活、安全、支援多模型 AI 協同且具備極致內省能力的現代 Forth 運算平台。
+peforth v2.1.0 完美證明了：極簡美學與現代強大能力可以相輔相成。透過貫徹「**Forth drives Forth; Python provides host primitives**」的核心理念，peforth 成功在動態物件語言之上，構築出一個靈活、安全、支援多模型 AI 協同且具備極致內省能力的現代 Forth 運算平台。
 
 
 ---
