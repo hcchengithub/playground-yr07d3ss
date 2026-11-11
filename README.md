@@ -976,7 +976,7 @@ python tools/peforth_watchdog.py
 - **Switching Models on the Fly**:
   Simply ask the AI in natural language; there is no need to memorize Forth commands or edit `providers.yaml` for an ordinary model switch. For example:
   ```forth
-  > ai: 請把 active LLM 切成 Google Gemini 3.8 Flash
+  > ai: Switch the active LLM to Google Gemini 3.8 Flash
   ```
   The requested model must be available through a configured provider and valid credentials.
 - **Permission Denied on Security Prompt**:
