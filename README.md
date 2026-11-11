@@ -1,3 +1,4 @@
+編輯助理： ChatGPT - https://chatgpt.com/c/6af447a9-0cdc-83e8-866d-546f4fdf51c7 
 - peforth manual.md
 - peforth manual (English).md
 - ai.md
