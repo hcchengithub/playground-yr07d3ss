@@ -3,9 +3,9 @@
 - peforth manual (English).md
 - ai.md
 
-# peforth v2.1.0 共用 Forth Kernel 技術手冊與架構設計理念
+# peforth 2.1.0 共用 Forth Kernel 技術手冊與架構設計理念
 
-> **版本**：peforth v2.1.0 核心技術架構規範手冊
+> **版本**：peforth 2.1.0 核心技術架構規範手冊
 > **適用環境**：Python 3.10+ / Linux, WSL, Windows
 > **核心源碼**：`main.py`, `init.f`, `peforth.f`, `projectk.py`, `base.f`, `auxiliary.f`, `ai.f`, `herdr.f`, `repl.f`, `ai.py`
 
@@ -18,7 +18,7 @@
 **peforth (Python Edition)** 延續 Forth 的設計精神，並探索它與現代程式語言相互結合的架構範式：
 **當 Forth 的多 Stack 拓撲與 Metaprogramming 靈魂，直接運行於 Python 這種具備豐富物件生態與動態特性的 Host Language 之上，會帶來何種可能？**
 
-在 **peforth v2.1.0** 中，這個理念進一步落實為清楚的分工：
+在 **peforth 2.1.0** 中，這個理念進一步落實為清楚的分工：
 
 > **「Forth drives Forth; Python provides host primitives.」**
 > （Forth 驅動 Forth 核心邏輯；Python 專注提供底層 Host 原語。）
@@ -376,12 +376,12 @@ Session Mirror 為 peforth 建立了**持久化的長期歷史與可檢索記憶
 
 ## 結語
 
-peforth v2.1.0 展示了：極簡美學與現代強大能力可以相輔相成。透過貫徹「**Forth drives Forth; Python provides host primitives**」的核心理念，peforth 成功在動態物件語言之上，構築出一個靈活、安全、支援多模型 AI 協同且具備極致內省能力的現代 Forth 運算平台。
+peforth 2.1.0 展示了：極簡美學與現代強大能力可以相輔相成。透過貫徹「**Forth drives Forth; Python provides host primitives**」的核心理念，peforth 成功在動態物件語言之上，構築出一個靈活、安全、支援多模型 AI 協同且具備極致內省能力的現代 Forth 運算平台。
 
 
 ---
 
-# peforth v2.1.0 — Forth Kernel Technical Manual and Architectural Philosophy
+# peforth 2.1.0 — Forth Kernel Technical Manual and Architectural Philosophy
 
 > English edition · Companion to the Traditional Chinese [peforth manual](peforth%20manual.md).
 >
@@ -398,7 +398,7 @@ Forth's enduring appeal lies in its small stack machine, postfix notation, open 
 
 **peforth (Python Edition)** takes another path: retain Forth's programmable language machinery while letting Python supply objects, libraries, I/O, and system integration. Rather than making Python look like Forth or turning Forth into a conventional Python wrapper, the two languages cooperate. Forth orchestrates; Python provides rich capabilities.
 
-In `peforth v2.1.0`, this philosophy reaches its definitive expression:
+In `peforth 2.1.0`, this philosophy reaches its definitive expression:
 
 > **"Forth drives Forth; Python provides host primitives."**
 
@@ -587,7 +587,7 @@ end-code
 
 ## 7. Tasks, Cooperative Pause, and Coroutines
 
-peforth v2.1.0 manages execution through cooperative Tasks built on Python generators.
+peforth 2.1.0 manages execution through cooperative Tasks built on Python generators.
 
 ### 7.1 Task Lifecycle & State Transitions
 
@@ -727,14 +727,14 @@ peforth 2.1.0 demonstrates that minimalism and modern capabilities are not mutua
 
 ---
 
-# peforth v2.1.0 AI User Manual
+# peforth 2.1.0 AI User Manual
 
 > [!TIP]
 > **Explore the repository with AI.** Please make full use of GitHub Copilot or the Gemini sidebar in Chrome to discuss peforth directly with its source code. This manual is an overview, not an exhaustive reference: ask AI to explain any feature, trace its implementation, or explore design decisions in as much detail as you like.
 >
 > You can even ask AI to help design and implement new Forth words. In peforth's chat mode, a leading `/` passes the rest of the input to the Forth interpreter, so a new word can also become a new slash-invoked capability. The possibilities extend far beyond a fixed list of commands. Give the assistant access to the repository and relevant files so it can ground its explanations and suggestions in the actual implementation.
 
-peforth v2.1.0 integrates an AI assistant directly into its Forth-driven environment. The Python host communicates with language models using standard HTTP client mechanisms, streaming responses into the interactive REPL while safely delegating tool invocations (such as dictionary queries and Forth code execution) back to the local VM.
+peforth 2.1.0 integrates an AI assistant directly into its Forth-driven environment. The Python host communicates with language models using standard HTTP client mechanisms, streaming responses into the interactive REPL while safely delegating tool invocations (such as dictionary queries and Forth code execution) back to the local VM.
 
 ---
 
